@@ -152,27 +152,39 @@ integración real con **Circle API** (o Stripe Crypto), usando las variables
 
 ## Deploy
 
+El repo incluye configuración as-code para ambas plataformas, así que no hace falta
+tocar build/start commands a mano en los dashboards:
+
+- `railway.json` (raíz del repo): build command, start command (corre `prisma migrate
+  deploy` automáticamente antes de arrancar el server en cada deploy), y healthcheck en
+  `/api/health`.
+- `packages/frontend/vercel.json`: output directory y rewrite para que las rutas de
+  React Router (`/login`, `/marca`, `/creador`, etc.) no den 404 al refrescar o entrar
+  directo por URL.
+- `packages/frontend/package.json` tiene un script `vercel-build` que Vercel detecta y
+  ejecuta automáticamente (compila `shared` antes que `frontend`).
+
 ### Backend → Railway
 
-1. Crea un nuevo proyecto en Railway y agrega un servicio Postgres (te da un `DATABASE_URL`
-   automáticamente).
-2. Agrega un servicio a partir de este repo, con **root directory** `packages/backend`.
-3. Variables de entorno a configurar: `DATABASE_URL` (la de Railway), `JWT_ACCESS_SECRET`,
-   `JWT_REFRESH_SECRET`, `FRONTEND_URL` (la URL de Vercel una vez la tengas), `NODE_ENV=production`.
-4. Build command: `npm install && npm run build --workspace=packages/shared && npm run build --workspace=packages/backend`
-   Start command: `npm run start --workspace=packages/backend`
-5. Corre las migraciones contra la base de producción una vez desplegado:
-   `railway run npm run db:deploy --workspace=packages/backend`
-   y siembra los datos demo: `railway run npm run db:seed --workspace=packages/backend`.
+1. Crea un nuevo proyecto en Railway conectado a este repo (root directory: la raíz del
+   repo, sin cambiar nada — `railway.json` ya define el resto).
+2. Agrega un plugin de **Postgres** al proyecto (te da `DATABASE_URL` automáticamente,
+   referenciable como variable en el servicio del backend).
+3. Variables de entorno a configurar en el servicio del backend: `DATABASE_URL`
+   (referencia al plugin de Postgres), `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`,
+   `FRONTEND_URL` (la URL de Vercel, se actualiza en el paso 5 de Vercel), `NODE_ENV=production`.
+4. Deploy. Las migraciones corren solas en cada arranque (parte del `startCommand`).
+5. Siembra los datos demo una sola vez desde la Railway CLI:
+   `railway run npm run db:seed --workspace=packages/backend`.
 
 ### Frontend → Vercel
 
 1. Importa el repo en Vercel.
-2. **Root directory**: `packages/frontend`.
-3. Build command: `npm install && npm run build --workspace=packages/shared && npm run build --workspace=packages/frontend`
-   Output directory: `packages/frontend/dist`.
-4. Variable de entorno: `VITE_API_URL` apuntando a la URL pública del backend en Railway
+2. **Root directory**: `packages/frontend` (Vercel detecta el monorepo por el lockfile
+   en la raíz y usa `vercel-build` automáticamente).
+3. Variable de entorno: `VITE_API_URL` apuntando a la URL pública del backend en Railway
    (ej. `https://tu-backend.up.railway.app/api`).
+4. Deploy.
 5. Una vez desplegado, actualiza `FRONTEND_URL` en Railway con la URL final de Vercel para
    que CORS y los links de verificación de email apunten correctamente.
 
