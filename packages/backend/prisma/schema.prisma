@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  MARCA
+  CREADOR
+  ADMIN
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+enum ApplicationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum VerifiedStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+model User {
+  id                     String    @id @default(uuid())
+  email                  String    @unique
+  password               String
+  role                   UserRole
+  emailVerified          Boolean   @default(false)
+  verificationToken      String?   @unique
+  verificationExpiresAt  DateTime?
+  refreshToken           String?
+  createdAt              DateTime  @default(now())
+
+  brand   Brand?
+  creator Creator?
+}
+
+model Brand {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName String
+  website     String
+  industry    String
+  createdAt   DateTime @default(now())
+
+  campaigns Campaign[]
+  payments  Payment[]
+}
+
+model Creator {
+  id             String         @id @default(uuid())
+  userId         String         @unique
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio            String         @default("")
+  xHandle        String?
+  igHandle       String?
+  tiktokHandle   String?
+  verifiedStatus VerifiedStatus @default(PENDING)
+  followerCount  Int            @default(0)
+  nichos         String[]       @default([])
+  createdAt      DateTime       @default(now())
+
+  applications CampaignApplication[]
+}
+
+model Campaign {
+  id                String         @id @default(uuid())
+  brandId           String
+  brand             Brand          @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  title             String
+  description       String
+  budgetUSDC        Float
+  duration          Int
+  minFollowers      Int            @default(0)
+  minEngagementRate Float          @default(0)
+  status            CampaignStatus @default(DRAFT)
+  createdAt         DateTime       @default(now())
+
+  applications CampaignApplication[]
+  payments     Payment[]
+}
+
+model CampaignApplication {
+  id         String            @id @default(uuid())
+  campaignId String
+  campaign   Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creatorId  String
+  creator    Creator           @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  status     ApplicationStatus @default(PENDING)
+  appliedAt  DateTime          @default(now())
+
+  @@unique([campaignId, creatorId])
+}
+
+model Payment {
+  id         String        @id @default(uuid())
+  brandId    String
+  brand      Brand         @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  campaignId String
+  campaign   Campaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  amountUSDC Float
+  txHash     String?
+  status     PaymentStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+}

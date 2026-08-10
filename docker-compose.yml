@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: casa_creadores
+    ports:
+      - "5432:5432"
+    volumes:
+      - casa_creadores_pgdata:/var/lib/postgresql/data
+
+volumes:
+  casa_creadores_pgdata:

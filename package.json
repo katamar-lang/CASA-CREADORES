@@ -1,0 +1,25 @@
+{
+  "name": "casa-creadores",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Plataforma SaaS de Influencer Marketing para marcas y creadores hispanohablantes en cripto/fintech",
+  "workspaces": [
+    "packages/shared",
+    "packages/backend",
+    "packages/frontend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=packages/backend & npm run dev --workspace=packages/frontend",
+    "dev:backend": "npm run dev --workspace=packages/backend",
+    "dev:frontend": "npm run dev --workspace=packages/frontend",
+    "build": "npm run build --workspace=packages/shared && npm run build --workspace=packages/backend && npm run build --workspace=packages/frontend",
+    "build:backend": "npm run build --workspace=packages/shared && npm run build --workspace=packages/backend",
+    "build:frontend": "npm run build --workspace=packages/shared && npm run build --workspace=packages/frontend",
+    "db:migrate": "npm run db:migrate --workspace=packages/backend",
+    "db:seed": "npm run db:seed --workspace=packages/backend",
+    "db:studio": "npm run db:studio --workspace=packages/backend"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
