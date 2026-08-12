@@ -20,7 +20,7 @@
     "db:studio": "npm run db:studio --workspace=packages/backend"
   },
   
-  "devDependencies": {
+  "dependencies": {
   "typescript": "^5.4.5"
 },
   "engines": {
