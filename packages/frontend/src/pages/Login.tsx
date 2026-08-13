@@ -1,8 +1,9 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Button } from "../components/Button";
-import { Card } from "../components/Card";
-import { Input } from "../components/Input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "../context/AuthContext";
 import { ApiError } from "../lib/api";
 
@@ -31,40 +32,49 @@ export function Login() {
   }
 
   return (
-    <div className="mx-auto flex min-h-[70vh] max-w-md items-center px-4 py-12">
-      <Card className="w-full">
-        <h1 className="mb-1 text-2xl font-bold text-ink">Iniciar sesión</h1>
-        <p className="mb-6 text-sm text-gray-500">Accede a tu panel de Casa Creadores.</p>
+    <div className="container flex min-h-[calc(100vh-4rem)] max-w-md items-center py-16">
+      <Card className="w-full border-none shadow-none sm:border sm:shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-xl">Iniciar sesión</CardTitle>
+          <CardDescription>Accede a tu panel de Casa Creadores.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tu@email.com"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="password">Contraseña</Label>
+              <Input
+                id="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+              />
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Entrando..." : "Entrar"}
+            </Button>
+          </form>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <Input
-            label="Email"
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="tu@email.com"
-          />
-          <Input
-            label="Contraseña"
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-          />
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <Button type="submit" fullWidth disabled={loading}>
-            {loading ? "Entrando..." : "Entrar"}
-          </Button>
-        </form>
-
-        <p className="mt-6 text-center text-sm text-gray-500">
-          ¿No tienes cuenta?{" "}
-          <Link to="/registro" className="font-semibold text-primary-700 hover:underline">
-            Regístrate
-          </Link>
-        </p>
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            ¿No tienes cuenta?{" "}
+            <Link to="/registro" className="font-medium text-foreground hover:underline">
+              Regístrate
+            </Link>
+          </p>
+        </CardContent>
       </Card>
     </div>
   );

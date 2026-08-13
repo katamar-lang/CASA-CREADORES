@@ -1,8 +1,10 @@
 import { FormEvent, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Button } from "../components/Button";
-import { Card } from "../components/Card";
-import { Input, Select } from "../components/Input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { apiFetch, ApiError } from "../lib/api";
 
 export function Register() {
@@ -36,66 +38,82 @@ export function Register() {
 
   if (success) {
     return (
-      <div className="mx-auto flex min-h-[70vh] max-w-md items-center px-4 py-12">
-        <Card className="w-full text-center">
-          <h1 className="mb-2 text-2xl font-bold text-ink">¡Revisa tu email!</h1>
-          <p className="mb-4 text-sm text-gray-600">{success.message}</p>
-          {success.devVerificationUrl && (
-            <div className="mb-4 rounded-lg bg-primary-50 p-3 text-left text-sm">
-              <p className="mb-1 font-semibold">Modo desarrollo:</p>
-              <Link to={success.devVerificationUrl.replace(window.location.origin, "")} className="break-all text-primary-800 underline">
-                {success.devVerificationUrl}
-              </Link>
-            </div>
-          )}
-          <Link to="/login" className="font-semibold text-primary-700 hover:underline">
-            Ir a iniciar sesión
-          </Link>
+      <div className="container flex min-h-[calc(100vh-4rem)] max-w-md items-center py-16">
+        <Card className="w-full border-none text-center shadow-none sm:border sm:shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-xl">¡Revisa tu email!</CardTitle>
+            <CardDescription>{success.message}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {success.devVerificationUrl && (
+              <div className="mb-6 rounded-md border border-border bg-muted/50 p-3 text-left text-sm">
+                <p className="mb-1 font-medium text-foreground">Modo desarrollo:</p>
+                <Link to={success.devVerificationUrl.replace(window.location.origin, "")} className="break-all text-muted-foreground underline underline-offset-2">
+                  {success.devVerificationUrl}
+                </Link>
+              </div>
+            )}
+            <Link to="/login" className="text-sm font-medium text-foreground hover:underline">
+              Ir a iniciar sesión
+            </Link>
+          </CardContent>
         </Card>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto flex min-h-[70vh] max-w-md items-center px-4 py-12">
-      <Card className="w-full">
-        <h1 className="mb-1 text-2xl font-bold text-ink">Crea tu cuenta</h1>
-        <p className="mb-6 text-sm text-gray-500">Empieza en menos de 3 minutos.</p>
+    <div className="container flex min-h-[calc(100vh-4rem)] max-w-md items-center py-16">
+      <Card className="w-full border-none shadow-none sm:border sm:shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-xl">Crea tu cuenta</CardTitle>
+          <CardDescription>Empieza en menos de 3 minutos.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="role">Soy...</Label>
+              <Select id="role" value={role} onChange={(e) => setRole(e.target.value as "MARCA" | "CREADOR")}>
+                <option value="MARCA">Marca</option>
+                <option value="CREADOR">Creador</option>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tu@email.com"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="password">Contraseña</Label>
+              <Input
+                id="password"
+                type="password"
+                required
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Mínimo 8 caracteres"
+              />
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Creando cuenta..." : "Crear cuenta"}
+            </Button>
+          </form>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <Select label="Soy..." value={role} onChange={(e) => setRole(e.target.value as "MARCA" | "CREADOR")}>
-            <option value="MARCA">Marca</option>
-            <option value="CREADOR">Creador</option>
-          </Select>
-          <Input
-            label="Email"
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="tu@email.com"
-          />
-          <Input
-            label="Contraseña"
-            type="password"
-            required
-            minLength={8}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Mínimo 8 caracteres"
-          />
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <Button type="submit" fullWidth disabled={loading}>
-            {loading ? "Creando cuenta..." : "Crear cuenta"}
-          </Button>
-        </form>
-
-        <p className="mt-6 text-center text-sm text-gray-500">
-          ¿Ya tienes cuenta?{" "}
-          <Link to="/login" className="font-semibold text-primary-700 hover:underline">
-            Inicia sesión
-          </Link>
-        </p>
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            ¿Ya tienes cuenta?{" "}
+            <Link to="/login" className="font-medium text-foreground hover:underline">
+              Inicia sesión
+            </Link>
+          </p>
+        </CardContent>
       </Card>
     </div>
   );

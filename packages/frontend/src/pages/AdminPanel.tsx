@@ -1,8 +1,10 @@
 import type { Creator, Payment } from "@casa-creadores/shared";
+import { Inbox } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Badge } from "../components/Badge";
-import { Button } from "../components/Button";
-import { Card } from "../components/Card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiFetch } from "../lib/api";
 
 type CreatorWithUser = Creator & { user: { email: string; createdAt: string } };
@@ -19,11 +21,20 @@ interface Stats {
   platformCommissionUSDC: number;
 }
 
+function StatBlock({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <div className="border-t border-border pt-4">
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mt-2 text-2xl font-semibold text-foreground">{value}</p>
+      {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+
 export function AdminPanel() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [pendingCreators, setPendingCreators] = useState<CreatorWithUser[]>([]);
   const [payments, setPayments] = useState<PaymentWithRelations[]>([]);
-  const [tab, setTab] = useState<"creadores" | "pagos">("creadores");
 
   async function loadAll() {
     const [s, creators, p] = await Promise.all([
@@ -49,97 +60,92 @@ export function AdminPanel() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
-      <h1 className="mb-8 text-2xl font-bold text-ink">Panel de administración</h1>
+    <div className="container py-16">
+      <h1 className="mb-12 text-2xl font-semibold tracking-tight text-foreground">Panel de administración</h1>
 
       {stats && (
-        <div className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <p className="text-sm text-gray-500">Marcas</p>
-            <p className="text-2xl font-bold text-ink">{stats.totalBrands}</p>
-          </Card>
-          <Card>
-            <p className="text-sm text-gray-500">Creadores ({stats.pendingCreators} pendientes)</p>
-            <p className="text-2xl font-bold text-ink">{stats.totalCreators}</p>
-          </Card>
-          <Card>
-            <p className="text-sm text-gray-500">Campañas activas / totales</p>
-            <p className="text-2xl font-bold text-ink">
-              {stats.activeCampaigns} / {stats.totalCampaigns}
-            </p>
-          </Card>
-          <Card>
-            <p className="text-sm text-gray-500">Ingresos totales (USDC)</p>
-            <p className="text-2xl font-bold text-ink">${stats.totalRevenueUSDC.toLocaleString()}</p>
-            <p className="text-xs text-gray-400">Comisión plataforma: ${stats.platformCommissionUSDC.toFixed(2)}</p>
-          </Card>
+        <div className="mb-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <StatBlock label="Marcas" value={String(stats.totalBrands)} />
+          <StatBlock label="Creadores" value={String(stats.totalCreators)} hint={`${stats.pendingCreators} pendientes`} />
+          <StatBlock label="Campañas" value={`${stats.activeCampaigns} / ${stats.totalCampaigns}`} hint="activas / totales" />
+          <StatBlock
+            label="Ingresos"
+            value={`$${stats.totalRevenueUSDC.toLocaleString()}`}
+            hint={`Comisión: $${stats.platformCommissionUSDC.toFixed(2)} USDC`}
+          />
         </div>
       )}
 
-      <div className="mb-6 flex gap-2 border-b border-gray-200">
-        <button
-          className={`px-4 py-2 text-sm font-semibold ${tab === "creadores" ? "border-b-2 border-primary text-ink" : "text-gray-500"}`}
-          onClick={() => setTab("creadores")}
-        >
-          Creadores pendientes ({pendingCreators.length})
-        </button>
-        <button
-          className={`px-4 py-2 text-sm font-semibold ${tab === "pagos" ? "border-b-2 border-primary text-ink" : "text-gray-500"}`}
-          onClick={() => setTab("pagos")}
-        >
-          Pagos ({payments.length})
-        </button>
-      </div>
+      <Tabs defaultValue="creadores">
+        <TabsList>
+          <TabsTrigger value="creadores">Creadores pendientes ({pendingCreators.length})</TabsTrigger>
+          <TabsTrigger value="pagos">Pagos ({payments.length})</TabsTrigger>
+        </TabsList>
 
-      {tab === "creadores" &&
-        (pendingCreators.length === 0 ? (
-          <Card className="text-center text-gray-500">No hay creadores pendientes de aprobación.</Card>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {pendingCreators.map((c) => (
-              <Card key={c.id} className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="font-semibold text-ink">{c.xHandle || c.igHandle || c.user.email}</p>
-                  <p className="text-sm text-gray-500">
-                    {c.user.email} · {c.followerCount.toLocaleString()} seguidores · {c.nichos.join(", ")}
-                  </p>
+        <TabsContent value="creadores">
+          {pendingCreators.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-20 text-center text-muted-foreground">
+              <Inbox className="h-8 w-8" strokeWidth={1.5} />
+              <p className="text-sm">No hay creadores pendientes de aprobación.</p>
+            </div>
+          ) : (
+            <div>
+              {pendingCreators.map((c) => (
+                <div key={c.id}>
+                  <div className="flex flex-wrap items-center justify-between gap-3 py-5">
+                    <div>
+                      <p className="font-medium text-foreground">{c.xHandle || c.igHandle || c.user.email}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {c.user.email} · {c.followerCount.toLocaleString()} seguidores · {c.nichos.join(", ")}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => handleVerify(c.id, "VERIFIED")}>
+                        Aprobar
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleVerify(c.id, "REJECTED")}>
+                        Rechazar
+                      </Button>
+                    </div>
+                  </div>
+                  <Separator />
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="secondary" onClick={() => handleVerify(c.id, "VERIFIED")}>
-                    Aprobar
-                  </Button>
-                  <Button variant="outline" onClick={() => handleVerify(c.id, "REJECTED")}>
-                    Rechazar
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
-        ))}
+              ))}
+            </div>
+          )}
+        </TabsContent>
 
-      {tab === "pagos" &&
-        (payments.length === 0 ? (
-          <Card className="text-center text-gray-500">Aún no hay pagos registrados.</Card>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {payments.map((p) => (
-              <Card key={p.id} className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="font-semibold text-ink">
-                    {p.brand.companyName} → {p.campaign.title}
-                  </p>
-                  <p className="break-all text-xs text-gray-400">{p.txHash}</p>
+        <TabsContent value="pagos">
+          {payments.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-20 text-center text-muted-foreground">
+              <Inbox className="h-8 w-8" strokeWidth={1.5} />
+              <p className="text-sm">Aún no hay pagos registrados.</p>
+            </div>
+          ) : (
+            <div>
+              {payments.map((p) => (
+                <div key={p.id}>
+                  <div className="flex flex-wrap items-center justify-between gap-3 py-5">
+                    <div>
+                      <p className="font-medium text-foreground">
+                        {p.brand.companyName} → {p.campaign.title}
+                      </p>
+                      <p className="break-all text-xs text-muted-foreground">{p.txHash}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium text-foreground">${p.amountUSDC.toLocaleString()} USDC</span>
+                      <Badge variant={p.status === "COMPLETED" ? "success" : p.status === "FAILED" ? "destructive" : "warning"}>
+                        {p.status}
+                      </Badge>
+                    </div>
+                  </div>
+                  <Separator />
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-semibold text-ink">${p.amountUSDC.toLocaleString()} USDC</span>
-                  <Badge tone={p.status === "COMPLETED" ? "green" : p.status === "FAILED" ? "red" : "yellow"}>
-                    {p.status}
-                  </Badge>
-                </div>
-              </Card>
-            ))}
-          </div>
-        ))}
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

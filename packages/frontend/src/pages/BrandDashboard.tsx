@@ -1,18 +1,22 @@
 import type { Brand, Campaign, Payment } from "@casa-creadores/shared";
 import { INDUSTRIAS } from "@casa-creadores/shared";
+import { Inbox } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Badge } from "../components/Badge";
-import { Button } from "../components/Button";
-import { Card } from "../components/Card";
-import { Input, Select } from "../components/Input";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { apiFetch, ApiError } from "../lib/api";
 
-const STATUS_TONE: Record<string, "yellow" | "green" | "gray" | "blue"> = {
-  DRAFT: "gray",
-  ACTIVE: "green",
-  PAUSED: "yellow",
-  COMPLETED: "blue",
+const STATUS_VARIANT: Record<string, "success" | "warning" | "secondary" | "outline"> = {
+  DRAFT: "secondary",
+  ACTIVE: "success",
+  PAUSED: "warning",
+  COMPLETED: "outline",
 };
 
 function BrandProfileForm({ onSaved }: { onSaved: (brand: Brand) => void }) {
@@ -40,33 +44,56 @@ function BrandProfileForm({ onSaved }: { onSaved: (brand: Brand) => void }) {
   }
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-12">
-      <Card>
-        <h1 className="mb-1 text-2xl font-bold text-ink">Completa el perfil de tu marca</h1>
-        <p className="mb-6 text-sm text-gray-500">Esto toma menos de un minuto.</p>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <Input label="Nombre de la empresa" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
-          <Input
-            label="Sitio web"
-            type="url"
-            required
-            placeholder="https://tuempresa.com"
-            value={website}
-            onChange={(e) => setWebsite(e.target.value)}
-          />
-          <Select label="Industria" value={industry} onChange={(e) => setIndustry(e.target.value)}>
-            {INDUSTRIAS.map((i) => (
-              <option key={i} value={i}>
-                {i}
-              </option>
-            ))}
-          </Select>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <Button type="submit" fullWidth disabled={loading}>
-            {loading ? "Guardando..." : "Guardar y continuar"}
-          </Button>
-        </form>
+    <div className="container max-w-lg py-16">
+      <Card className="shadow-none">
+        <CardHeader>
+          <CardTitle className="text-xl">Completa el perfil de tu marca</CardTitle>
+          <CardDescription>Esto toma menos de un minuto.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="companyName">Nombre de la empresa</Label>
+              <Input id="companyName" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="website">Sitio web</Label>
+              <Input
+                id="website"
+                type="url"
+                required
+                placeholder="https://tuempresa.com"
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="industry">Industria</Label>
+              <Select id="industry" value={industry} onChange={(e) => setIndustry(e.target.value)}>
+                {INDUSTRIAS.map((i) => (
+                  <option key={i} value={i}>
+                    {i}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Guardando..." : "Guardar y continuar"}
+            </Button>
+          </form>
+        </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function StatBlock({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <div className="border-t border-border pt-4">
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mt-2 text-2xl font-semibold text-foreground">{value}</p>
+      {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
 }
@@ -115,80 +142,88 @@ export function BrandDashboard() {
   }
 
   if (brand === undefined) {
-    return <div className="py-20 text-center text-gray-500">Cargando...</div>;
+    return <div className="container py-24 text-center text-sm text-muted-foreground">Cargando...</div>;
   }
 
   if (brand === null) {
-    return <BrandProfileForm onSaved={(b) => { setBrand(b); loadAll(); }} />;
+    return (
+      <BrandProfileForm
+        onSaved={(b) => {
+          setBrand(b);
+          loadAll();
+        }}
+      />
+    );
   }
 
   const totalPaidUSDC = payments.filter((p) => p.status === "COMPLETED").reduce((sum, p) => sum + p.amountUSDC, 0);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+    <div className="container py-16">
+      <div className="mb-12 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-ink">Hola, {brand.companyName} 👋</h1>
-          <p className="text-sm text-gray-500">{brand.industry} · {brand.website}</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">{brand.companyName}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {brand.industry} · {brand.website}
+          </p>
         </div>
         <div className="flex gap-3">
-          <Link to="/marca/creadores">
-            <Button variant="outline">Ver creadores</Button>
-          </Link>
-          <Link to="/marca/campanas/nueva">
-            <Button>+ Nueva campaña</Button>
-          </Link>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/marca/creadores">Ver creadores</Link>
+          </Button>
+          <Button asChild size="sm">
+            <Link to="/marca/campanas/nueva">Nueva campaña</Link>
+          </Button>
         </div>
       </div>
 
-      <div className="mb-8 grid gap-4 sm:grid-cols-3">
-        <Card>
-          <p className="text-sm text-gray-500">Campañas totales</p>
-          <p className="text-2xl font-bold text-ink">{campaigns.length}</p>
-        </Card>
-        <Card>
-          <p className="text-sm text-gray-500">Campañas activas</p>
-          <p className="text-2xl font-bold text-ink">{campaigns.filter((c) => c.status === "ACTIVE").length}</p>
-        </Card>
-        <Card>
-          <p className="text-sm text-gray-500">Total pagado (USDC)</p>
-          <p className="text-2xl font-bold text-ink">${totalPaidUSDC.toLocaleString()}</p>
-        </Card>
+      <div className="mb-12 grid gap-6 sm:grid-cols-3">
+        <StatBlock label="Campañas totales" value={String(campaigns.length)} />
+        <StatBlock label="Campañas activas" value={String(campaigns.filter((c) => c.status === "ACTIVE").length)} />
+        <StatBlock label="Total pagado" value={`$${totalPaidUSDC.toLocaleString()}`} hint="USDC" />
       </div>
 
-      <h2 className="mb-4 text-lg font-bold text-ink">Tus campañas</h2>
+      <h2 className="mb-6 text-sm font-medium uppercase tracking-wide text-muted-foreground">Tus campañas</h2>
+
       {campaigns.length === 0 ? (
-        <Card className="text-center text-gray-500">
-          Aún no tienes campañas.{" "}
-          <Link to="/marca/campanas/nueva" className="font-semibold text-primary-700 hover:underline">
-            Crea la primera
-          </Link>
-          .
-        </Card>
+        <div className="flex flex-col items-center gap-3 border-t border-border py-24 text-center text-muted-foreground">
+          <Inbox className="h-8 w-8" strokeWidth={1.5} />
+          <p className="text-sm">
+            Aún no tienes campañas.{" "}
+            <Link to="/marca/campanas/nueva" className="font-medium text-foreground hover:underline">
+              Crea la primera
+            </Link>
+            .
+          </p>
+        </div>
       ) : (
-        <div className="flex flex-col gap-4">
+        <div className="border-t border-border">
           {campaigns.map((c) => {
             const isPaid = payments.some((p) => p.campaignId === c.id && p.status === "COMPLETED");
             return (
-              <Card key={c.id} className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <div className="mb-1 flex items-center gap-2">
-                    <Link to={`/campanas/${c.id}`} className="font-semibold text-ink hover:underline">
-                      {c.title}
-                    </Link>
-                    <Badge tone={STATUS_TONE[c.status]}>{c.status}</Badge>
-                    {isPaid && <Badge tone="blue">Pagada</Badge>}
+              <div key={c.id}>
+                <div className="flex flex-wrap items-center justify-between gap-4 py-5">
+                  <div>
+                    <div className="mb-1 flex items-center gap-2">
+                      <Link to={`/campanas/${c.id}`} className="font-medium text-foreground hover:underline">
+                        {c.title}
+                      </Link>
+                      <Badge variant={STATUS_VARIANT[c.status]}>{c.status}</Badge>
+                      {isPaid && <Badge variant="outline">Pagada</Badge>}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      ${c.budgetUSDC.toLocaleString()} USDC · {c.duration} días · min.{" "}
+                      {c.minFollowers.toLocaleString()} seguidores
+                    </p>
                   </div>
-                  <p className="text-sm text-gray-500">
-                    ${c.budgetUSDC.toLocaleString()} USDC · {c.duration} días · min. {c.minFollowers.toLocaleString()} seguidores
-                  </p>
+                  {!isPaid && (
+                    <Button variant="outline" size="sm" disabled={payingId === c.id} onClick={() => handlePay(c)}>
+                      {payingId === c.id ? "Procesando..." : "Pagar ahora (USDC)"}
+                    </Button>
+                  )}
                 </div>
-                {!isPaid && (
-                  <Button variant="secondary" disabled={payingId === c.id} onClick={() => handlePay(c)}>
-                    {payingId === c.id ? "Procesando..." : "Pagar ahora (USDC)"}
-                  </Button>
-                )}
-              </Card>
+                <Separator />
+              </div>
             );
           })}
         </div>

@@ -12,6 +12,7 @@ export default defineConfig({
       // Importa el código fuente TS del paquete compartido directamente, en vez del
       // build CJS en dist/. Evita problemas de interop CJS/ESM con Rollup en el bundle.
       "@casa-creadores/shared": path.resolve(__dirname, "../shared/src/index.ts"),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
   server: {

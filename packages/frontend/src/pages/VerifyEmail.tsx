@@ -1,6 +1,7 @@
+import { CircleAlert, CircleCheck, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Card } from "../components/Card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiFetch, ApiError } from "../lib/api";
 
 export function VerifyEmail() {
@@ -32,25 +33,40 @@ export function VerifyEmail() {
   }, [token]);
 
   return (
-    <div className="mx-auto flex min-h-[70vh] max-w-md items-center px-4 py-12">
-      <Card className="w-full text-center">
-        {status === "loading" && <p className="text-gray-500">Verificando tu email...</p>}
+    <div className="container flex min-h-[calc(100vh-4rem)] max-w-md items-center py-16">
+      <Card className="w-full border-none text-center shadow-none sm:border sm:shadow-sm">
+        {status === "loading" && (
+          <CardContent className="flex flex-col items-center gap-3 pt-6">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Verificando tu email...</p>
+          </CardContent>
+        )}
         {status === "success" && (
           <>
-            <h1 className="mb-2 text-2xl font-bold text-ink">¡Email verificado!</h1>
-            <p className="mb-4 text-sm text-gray-600">{message}</p>
-            <Link to="/login" className="font-semibold text-primary-700 hover:underline">
-              Ir a iniciar sesión
-            </Link>
+            <CardHeader className="items-center">
+              <CircleCheck className="mb-2 h-8 w-8 text-emerald-600" strokeWidth={1.5} />
+              <CardTitle className="text-xl">¡Email verificado!</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-6 text-sm text-muted-foreground">{message}</p>
+              <Link to="/login" className="text-sm font-medium text-foreground hover:underline">
+                Ir a iniciar sesión
+              </Link>
+            </CardContent>
           </>
         )}
         {status === "error" && (
           <>
-            <h1 className="mb-2 text-2xl font-bold text-ink">No pudimos verificar tu email</h1>
-            <p className="mb-4 text-sm text-red-600">{message}</p>
-            <Link to="/registro" className="font-semibold text-primary-700 hover:underline">
-              Volver a intentar
-            </Link>
+            <CardHeader className="items-center">
+              <CircleAlert className="mb-2 h-8 w-8 text-destructive" strokeWidth={1.5} />
+              <CardTitle className="text-xl">No pudimos verificar tu email</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-6 text-sm text-destructive">{message}</p>
+              <Link to="/registro" className="text-sm font-medium text-foreground hover:underline">
+                Volver a intentar
+              </Link>
+            </CardContent>
           </>
         )}
       </Card>

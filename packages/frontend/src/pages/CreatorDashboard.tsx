@@ -1,17 +1,21 @@
 import type { Campaign, CampaignApplication, Creator } from "@casa-creadores/shared";
 import { NICHOS_CRIPTO } from "@casa-creadores/shared";
+import { BadgeCheck, Inbox } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Badge } from "../components/Badge";
-import { Button } from "../components/Button";
-import { Card } from "../components/Card";
-import { Input, Textarea } from "../components/Input";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import { apiFetch, ApiError } from "../lib/api";
 
-const STATUS_TONE: Record<string, "yellow" | "green" | "red" | "gray"> = {
-  PENDING: "yellow",
-  ACCEPTED: "green",
-  REJECTED: "red",
+const STATUS_VARIANT: Record<string, "success" | "warning" | "destructive"> = {
+  PENDING: "warning",
+  ACCEPTED: "success",
+  REJECTED: "destructive",
 };
 
 function CreatorProfileForm({ initial, onSaved }: { initial?: Creator; onSaved: (creator: Creator) => void }) {
@@ -53,49 +57,68 @@ function CreatorProfileForm({ initial, onSaved }: { initial?: Creator; onSaved: 
   }
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-12">
-      <Card>
-        <h1 className="mb-1 text-2xl font-bold text-ink">{initial ? "Actualiza tu perfil" : "Completa tu perfil"}</h1>
-        <p className="mb-6 text-sm text-gray-500">Así te encuentran las marcas en menos de 3 minutos.</p>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <Textarea label="Bio" value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Cuéntanos sobre tu contenido..." />
-          <div className="grid grid-cols-3 gap-3">
-            <Input label="X (Twitter)" value={xHandle} onChange={(e) => setXHandle(e.target.value)} placeholder="@usuario" />
-            <Input label="Instagram" value={igHandle} onChange={(e) => setIgHandle(e.target.value)} placeholder="usuario" />
-            <Input label="TikTok" value={tiktokHandle} onChange={(e) => setTiktokHandle(e.target.value)} placeholder="usuario" />
-          </div>
-          <Input
-            label="Total de seguidores (aprox.)"
-            type="number"
-            min={0}
-            value={followerCount}
-            onChange={(e) => setFollowerCount(e.target.value)}
-          />
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-ink">Nichos (máx. 5)</label>
-            <div className="flex flex-wrap gap-2">
-              {NICHOS_CRIPTO.map((n) => (
-                <button
-                  type="button"
-                  key={n}
-                  onClick={() => toggleNicho(n)}
-                  className={[
-                    "rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
-                    nichos.includes(n)
-                      ? "border-primary-600 bg-primary text-ink"
-                      : "border-gray-300 text-gray-600 hover:border-primary-400",
-                  ].join(" ")}
-                >
-                  {n}
-                </button>
-              ))}
+    <div className="container max-w-lg py-16">
+      <Card className="shadow-none">
+        <CardHeader>
+          <CardTitle className="text-xl">{initial ? "Actualiza tu perfil" : "Completa tu perfil"}</CardTitle>
+          <CardDescription>Así te encuentran las marcas en menos de 3 minutos.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="bio">Bio</Label>
+              <Textarea id="bio" value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Cuéntanos sobre tu contenido..." />
             </div>
-          </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <Button type="submit" fullWidth disabled={loading}>
-            {loading ? "Guardando..." : "Guardar perfil"}
-          </Button>
-        </form>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="x">X (Twitter)</Label>
+                <Input id="x" value={xHandle} onChange={(e) => setXHandle(e.target.value)} placeholder="@usuario" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="ig">Instagram</Label>
+                <Input id="ig" value={igHandle} onChange={(e) => setIgHandle(e.target.value)} placeholder="usuario" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="tiktok">TikTok</Label>
+                <Input id="tiktok" value={tiktokHandle} onChange={(e) => setTiktokHandle(e.target.value)} placeholder="usuario" />
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="followers">Total de seguidores (aprox.)</Label>
+              <Input
+                id="followers"
+                type="number"
+                min={0}
+                value={followerCount}
+                onChange={(e) => setFollowerCount(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label>Nichos (máx. 5)</Label>
+              <div className="flex flex-wrap gap-2">
+                {NICHOS_CRIPTO.map((n) => (
+                  <button
+                    type="button"
+                    key={n}
+                    onClick={() => toggleNicho(n)}
+                    className={[
+                      "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                      nichos.includes(n)
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border text-muted-foreground hover:border-foreground/50 hover:text-foreground",
+                    ].join(" ")}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Guardando..." : "Guardar perfil"}
+            </Button>
+          </form>
+        </CardContent>
       </Card>
     </div>
   );
@@ -129,7 +152,7 @@ export function CreatorDashboard() {
   }, []);
 
   if (creator === undefined) {
-    return <div className="py-20 text-center text-gray-500">Cargando...</div>;
+    return <div className="container py-24 text-center text-sm text-muted-foreground">Cargando...</div>;
   }
 
   if (creator === null || editing) {
@@ -148,57 +171,70 @@ export function CreatorDashboard() {
   const appliedIds = new Set(applications.map((a) => a.campaignId));
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+    <div className="container py-16">
+      <div className="mb-12 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-ink">Hola, {creator.xHandle || creator.igHandle || "creador"} 👋</h1>
-          <p className="text-sm text-gray-500">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+              {creator.xHandle || creator.igHandle || "Tu perfil"}
+            </h1>
+            {creator.verifiedStatus === "VERIFIED" && <BadgeCheck className="h-5 w-5 text-emerald-600" />}
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
             {creator.followerCount.toLocaleString()} seguidores ·{" "}
-            <Badge tone={creator.verifiedStatus === "VERIFIED" ? "green" : "yellow"}>
-              {creator.verifiedStatus === "VERIFIED" ? "Verificado" : "Pendiente de aprobación"}
-            </Badge>
+            {creator.verifiedStatus === "VERIFIED" ? "Verificado" : "Pendiente de aprobación"}
           </p>
         </div>
-        <Button variant="outline" onClick={() => setEditing(true)}>
+        <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
           Editar perfil
         </Button>
       </div>
 
-      <h2 className="mb-4 text-lg font-bold text-ink">Tus aplicaciones</h2>
+      <h2 className="mb-4 text-sm font-medium uppercase tracking-wide text-muted-foreground">Tus aplicaciones</h2>
       {applications.length === 0 ? (
-        <p className="mb-8 text-sm text-gray-500">Aún no has aplicado a ninguna campaña.</p>
+        <p className="mb-12 border-t border-border py-8 text-sm text-muted-foreground">
+          Aún no has aplicado a ninguna campaña.
+        </p>
       ) : (
-        <div className="mb-8 flex flex-col gap-3">
+        <div className="mb-12 border-t border-border">
           {applications.map((a) => (
-            <Card key={a.id} className="flex flex-wrap items-center justify-between gap-3">
-              <Link to={`/campanas/${a.campaign.id}`} className="font-semibold text-ink hover:underline">
-                {a.campaign.title}
-              </Link>
-              <Badge tone={STATUS_TONE[a.status]}>{a.status}</Badge>
-            </Card>
+            <div key={a.id}>
+              <div className="flex flex-wrap items-center justify-between gap-3 py-4">
+                <Link to={`/campanas/${a.campaign.id}`} className="font-medium text-foreground hover:underline">
+                  {a.campaign.title}
+                </Link>
+                <Badge variant={STATUS_VARIANT[a.status]}>{a.status}</Badge>
+              </div>
+              <Separator />
+            </div>
           ))}
         </div>
       )}
 
-      <h2 className="mb-4 text-lg font-bold text-ink">Campañas activas</h2>
+      <h2 className="mb-6 text-sm font-medium uppercase tracking-wide text-muted-foreground">Campañas activas</h2>
       {campaigns.length === 0 ? (
-        <Card className="text-center text-gray-500">No hay campañas activas por ahora. Vuelve pronto.</Card>
+        <div className="flex flex-col items-center gap-3 border-t border-border py-24 text-center text-muted-foreground">
+          <Inbox className="h-8 w-8" strokeWidth={1.5} />
+          <p className="text-sm">No hay campañas activas por ahora. Vuelve pronto.</p>
+        </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {campaigns.map((c) => (
-            <Card key={c.id}>
-              <Link to={`/campanas/${c.id}`} className="font-semibold text-ink hover:underline">
-                {c.title}
-              </Link>
-              <p className="my-2 line-clamp-2 text-sm text-gray-600">{c.description}</p>
-              <p className="mb-2 text-sm font-medium text-ink">${c.budgetUSDC.toLocaleString()} USDC</p>
-              {appliedIds.has(c.id) ? (
-                <Badge tone="blue">Ya aplicaste</Badge>
-              ) : (
-                <Link to={`/campanas/${c.id}`}>
-                  <Button variant="outline">Ver y aplicar</Button>
+            <Card key={c.id} className="shadow-none">
+              <CardContent className="pt-6">
+                <Link to={`/campanas/${c.id}`} className="font-medium text-foreground hover:underline">
+                  {c.title}
                 </Link>
-              )}
+                <p className="my-3 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{c.description}</p>
+                <p className="mb-3 text-sm font-medium text-foreground">${c.budgetUSDC.toLocaleString()} USDC</p>
+                {appliedIds.has(c.id) ? (
+                  <Badge variant="outline">Ya aplicaste</Badge>
+                ) : (
+                  <Button asChild variant="outline" size="sm">
+                    <Link to={`/campanas/${c.id}`}>Ver y aplicar</Link>
+                  </Button>
+                )}
+              </CardContent>
             </Card>
           ))}
         </div>

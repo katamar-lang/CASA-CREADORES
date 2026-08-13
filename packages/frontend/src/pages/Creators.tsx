@@ -1,9 +1,11 @@
 import type { Creator } from "@casa-creadores/shared";
 import { NICHOS_CRIPTO } from "@casa-creadores/shared";
+import { BadgeCheck, Inbox, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Badge } from "../components/Badge";
-import { Card } from "../components/Card";
-import { Select } from "../components/Input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { apiFetch } from "../lib/api";
 
 type CreatorWithUser = Creator & { user: { email: string; createdAt: string } };
@@ -26,13 +28,16 @@ export function Creators() {
   }, [nicho, verifiedOnly]);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
-      <h1 className="mb-1 text-2xl font-bold text-ink">Creadores sugeridos</h1>
-      <p className="mb-6 text-sm text-gray-500">Explora creadores hispanohablantes en cripto y fintech.</p>
+    <div className="container py-16">
+      <div className="mb-10 max-w-xl">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Creadores sugeridos</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Explora creadores hispanohablantes en cripto y fintech.</p>
+      </div>
 
-      <div className="mb-6 flex flex-wrap items-end gap-4">
-        <div className="w-56">
-          <Select label="Nicho" value={nicho} onChange={(e) => setNicho(e.target.value)}>
+      <div className="mb-10 flex flex-wrap items-end gap-6 border-b border-border pb-6">
+        <div className="flex w-56 flex-col gap-2">
+          <Label htmlFor="nicho">Nicho</Label>
+          <Select id="nicho" value={nicho} onChange={(e) => setNicho(e.target.value)}>
             <option value="">Todos</option>
             {NICHOS_CRIPTO.map((n) => (
               <option key={n} value={n}>
@@ -41,40 +46,53 @@ export function Creators() {
             ))}
           </Select>
         </div>
-        <label className="flex items-center gap-2 pb-2.5 text-sm font-medium text-ink">
-          <input type="checkbox" checked={verifiedOnly} onChange={(e) => setVerifiedOnly(e.target.checked)} />
+        <label className="flex items-center gap-2 pb-2 text-sm text-foreground">
+          <input
+            type="checkbox"
+            checked={verifiedOnly}
+            onChange={(e) => setVerifiedOnly(e.target.checked)}
+            className="h-4 w-4 rounded border-input"
+          />
           Solo verificados
         </label>
       </div>
 
       {loading ? (
-        <p className="text-gray-500">Cargando creadores...</p>
+        <div className="flex items-center gap-2 py-16 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Cargando creadores...
+        </div>
       ) : creators.length === 0 ? (
-        <Card className="text-center text-gray-500">No se encontraron creadores con esos filtros.</Card>
+        <div className="flex flex-col items-center gap-3 py-24 text-center text-muted-foreground">
+          <Inbox className="h-8 w-8" strokeWidth={1.5} />
+          <p className="text-sm">No se encontraron creadores con esos filtros.</p>
+        </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {creators.map((c) => (
-            <Card key={c.id}>
-              <div className="mb-2 flex items-start justify-between">
-                <div>
-                  <p className="font-semibold text-ink">{c.xHandle || c.igHandle || "Creador"}</p>
-                  <p className="text-xs text-gray-400">{c.user.email}</p>
+            <Card key={c.id} className="shadow-none">
+              <CardContent className="pt-6">
+                <div className="mb-3 flex items-start justify-between">
+                  <div>
+                    <p className="font-medium text-foreground">{c.xHandle || c.igHandle || "Creador"}</p>
+                    <p className="text-xs text-muted-foreground">{c.user.email}</p>
+                  </div>
+                  {c.verifiedStatus === "VERIFIED" ? (
+                    <BadgeCheck className="h-4 w-4 shrink-0 text-emerald-600" />
+                  ) : (
+                    <Badge variant="warning">Pendiente</Badge>
+                  )}
                 </div>
-                <Badge tone={c.verifiedStatus === "VERIFIED" ? "green" : "yellow"}>
-                  {c.verifiedStatus === "VERIFIED" ? "Verificado" : "Pendiente"}
-                </Badge>
-              </div>
-              <p className="mb-3 text-sm text-gray-600 line-clamp-3">{c.bio}</p>
-              <p className="mb-2 text-sm font-medium text-ink">
-                {c.followerCount.toLocaleString()} seguidores
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {c.nichos.map((n) => (
-                  <Badge key={n} tone="gray">
-                    {n}
-                  </Badge>
-                ))}
-              </div>
+                <p className="mb-4 line-clamp-3 text-sm leading-relaxed text-muted-foreground">{c.bio}</p>
+                <p className="mb-3 text-sm font-medium text-foreground">{c.followerCount.toLocaleString()} seguidores</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {c.nichos.map((n) => (
+                    <Badge key={n} variant="outline">
+                      {n}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
             </Card>
           ))}
         </div>
