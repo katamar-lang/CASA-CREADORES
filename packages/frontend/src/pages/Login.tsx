@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "../context/AuthContext";
-import { ApiError } from "../lib/api";
+import { toUserMessage } from "../lib/errors";
 
 export function Login() {
   const { login } = useAuth();
@@ -21,11 +21,11 @@ export function Login() {
     setLoading(true);
     try {
       const user = await login(email, password);
-      if (user.role === "MARCA") navigate("/marca");
-      else if (user.role === "CREADOR") navigate("/creador");
-      else navigate("/admin");
+      if (user.role === "MARCA") navigate("/marca", { replace: true });
+      else if (user.role === "CREADOR") navigate("/creador", { replace: true });
+      else navigate("/admin", { replace: true });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo iniciar sesión.");
+      setError(toUserMessage(err, "No se pudo iniciar sesión."));
     } finally {
       setLoading(false);
     }
@@ -45,6 +45,7 @@ export function Login() {
               <Input
                 id="email"
                 type="email"
+                autoComplete="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -56,6 +57,7 @@ export function Login() {
               <Input
                 id="password"
                 type="password"
+                autoComplete="current-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

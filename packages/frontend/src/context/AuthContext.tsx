@@ -6,6 +6,8 @@ interface AuthContextValue {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<User>;
+  /** Guarda una sesión ya emitida por el backend (p. ej. al registrarse). */
+  adoptSession: (accessToken: string, refreshToken: string, user: User) => void;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -49,6 +51,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return data.user;
   }
 
+  function adoptSession(accessToken: string, refreshToken: string, nextUser: User) {
+    setTokens(accessToken, refreshToken);
+    setUser(nextUser);
+  }
+
   async function logout() {
     try {
       await apiFetch("/auth/logout", { method: "POST" });
@@ -60,7 +67,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, loading, login, adoptSession, logout, refreshUser }}>
+      {children}
+    </AuthContext.Provider>
   );
 }
 

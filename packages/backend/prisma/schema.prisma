@@ -111,6 +111,15 @@ model CampaignApplication {
   @@unique([campaignId, creatorId])
 }
 
+model ContactMessage {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  message   String
+  handled   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
 model Payment {
   id         String        @id @default(uuid())
   brandId    String

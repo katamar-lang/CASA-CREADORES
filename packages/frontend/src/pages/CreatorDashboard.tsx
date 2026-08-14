@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { apiFetch, ApiError } from "../lib/api";
+import { toUserMessage } from "../lib/errors";
 
 const STATUS_VARIANT: Record<string, "success" | "warning" | "destructive"> = {
   PENDING: "warning",
@@ -50,7 +51,7 @@ function CreatorProfileForm({ initial, onSaved }: { initial?: Creator; onSaved: 
       });
       onSaved(creator);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo guardar el perfil.");
+      setError(toUserMessage(err, "No se pudo guardar el perfil."));
     } finally {
       setLoading(false);
     }
@@ -129,8 +130,10 @@ export function CreatorDashboard() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [applications, setApplications] = useState<Array<CampaignApplication & { campaign: Campaign }>>([]);
   const [editing, setEditing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   async function loadAll() {
+    setLoadError(null);
     try {
       const c = await apiFetch<Creator>("/creators/me");
       setCreator(c);
@@ -141,15 +144,29 @@ export function CreatorDashboard() {
       setCampaigns(camps);
       setApplications(apps);
     } catch (err) {
+      // 404 significa "todavía no completó el perfil", no es un error real.
       if (err instanceof ApiError && err.status === 404) {
         setCreator(null);
+        return;
       }
+      setLoadError(toUserMessage(err, "No pudimos cargar tu panel."));
     }
   }
 
   useEffect(() => {
     loadAll();
   }, []);
+
+  if (loadError) {
+    return (
+      <div className="container flex flex-col items-center gap-4 py-24 text-center">
+        <p className="text-sm text-destructive">{loadError}</p>
+        <Button variant="outline" size="sm" onClick={loadAll}>
+          Reintentar
+        </Button>
+      </div>
+    );
+  }
 
   if (creator === undefined) {
     return <div className="container py-24 text-center text-sm text-muted-foreground">Cargando...</div>;

@@ -28,17 +28,17 @@ async function main() {
 
   const demoBrandPassword = await bcrypt.hash("marca123", 10);
   const brandUser = await prisma.user.upsert({
-    where: { email: "marca@hivello.com" },
+    where: { email: "marca@casacreadores.demo" },
     update: {},
     create: {
-      email: "marca@hivello.com",
+      email: "marca@casacreadores.demo",
       password: demoBrandPassword,
       role: UserRole.MARCA,
       emailVerified: true,
       brand: {
         create: {
-          companyName: "Hivello",
-          website: "https://hivello.com",
+          companyName: "Marca Demo",
+          website: "https://example.com",
           industry: "Fintech",
         },
       },

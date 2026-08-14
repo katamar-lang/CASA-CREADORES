@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { apiFetch, ApiError } from "../lib/api";
+import { apiFetch } from "../lib/api";
+import { toUserMessage } from "../lib/errors";
 
 export function CampaignCreate() {
   const navigate = useNavigate();
@@ -36,7 +37,7 @@ export function CampaignCreate() {
       });
       navigate(`/campanas/${campaign.id}`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo crear la campaña.");
+      setError(toUserMessage(err, "No se pudo crear la campaña."));
     } finally {
       setLoading(false);
     }

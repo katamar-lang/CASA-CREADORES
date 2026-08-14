@@ -1,14 +1,33 @@
+import type { User } from "@casa-creadores/shared";
 import { FormEvent, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { apiFetch, ApiError } from "../lib/api";
+import { useAuth } from "../context/AuthContext";
+import { apiFetch } from "../lib/api";
+import { toUserMessage } from "../lib/errors";
+
+type RegisterResponse = {
+  requiresVerification: boolean;
+  message: string;
+  accessToken?: string;
+  refreshToken?: string;
+  user?: User;
+};
+
+function dashboardPathFor(role: string): string {
+  if (role === "MARCA") return "/marca";
+  if (role === "CREADOR") return "/creador";
+  return "/admin";
+}
 
 export function Register() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { adoptSession } = useAuth();
   const initialRole = searchParams.get("role") === "CREADOR" ? "CREADOR" : "MARCA";
 
   const [email, setEmail] = useState("");
@@ -16,43 +35,44 @@ export function Register() {
   const [role, setRole] = useState<"MARCA" | "CREADOR">(initialRole);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState<{ message: string; devVerificationUrl?: string } | null>(null);
+  const [pendingVerification, setPendingVerification] = useState<string | null>(null);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      const data = await apiFetch<{ message: string; devVerificationUrl?: string }>("/auth/register", {
+      const data = await apiFetch<RegisterResponse>("/auth/register", {
         method: "POST",
         skipAuth: true,
         body: JSON.stringify({ email, password, role }),
       });
-      setSuccess(data);
+
+      // La cuenta quedó activa: entramos directamente al panel.
+      if (!data.requiresVerification && data.accessToken && data.refreshToken && data.user) {
+        adoptSession(data.accessToken, data.refreshToken, data.user);
+        navigate(dashboardPathFor(data.user.role), { replace: true });
+        return;
+      }
+
+      // Hay proveedor de email configurado: hay que verificar antes de entrar.
+      setPendingVerification(data.message);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo crear la cuenta.");
+      setError(toUserMessage(err, "No se pudo crear la cuenta. Inténtalo de nuevo."));
     } finally {
       setLoading(false);
     }
   }
 
-  if (success) {
+  if (pendingVerification) {
     return (
       <div className="container flex min-h-[calc(100vh-4rem)] max-w-md items-center py-16">
-        <Card className="w-full border-none text-center shadow-none sm:border sm:shadow-sm">
+        <Card className="w-full border-none text-center shadow-none sm:border">
           <CardHeader>
-            <CardTitle className="text-xl">¡Revisa tu email!</CardTitle>
-            <CardDescription>{success.message}</CardDescription>
+            <CardTitle className="text-xl">Revisa tu email</CardTitle>
+            <CardDescription>{pendingVerification}</CardDescription>
           </CardHeader>
           <CardContent>
-            {success.devVerificationUrl && (
-              <div className="mb-6 rounded-md border border-border bg-muted/50 p-3 text-left text-sm">
-                <p className="mb-1 font-medium text-foreground">Modo desarrollo:</p>
-                <Link to={success.devVerificationUrl.replace(window.location.origin, "")} className="break-all text-muted-foreground underline underline-offset-2">
-                  {success.devVerificationUrl}
-                </Link>
-              </div>
-            )}
             <Link to="/login" className="text-sm font-medium text-foreground hover:underline">
               Ir a iniciar sesión
             </Link>
@@ -64,7 +84,7 @@ export function Register() {
 
   return (
     <div className="container flex min-h-[calc(100vh-4rem)] max-w-md items-center py-16">
-      <Card className="w-full border-none shadow-none sm:border sm:shadow-sm">
+      <Card className="w-full border-none shadow-none sm:border">
         <CardHeader>
           <CardTitle className="text-xl">Crea tu cuenta</CardTitle>
           <CardDescription>Empieza en menos de 3 minutos.</CardDescription>
@@ -83,6 +103,7 @@ export function Register() {
               <Input
                 id="email"
                 type="email"
+                autoComplete="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -94,12 +115,14 @@ export function Register() {
               <Input
                 id="password"
                 type="password"
+                autoComplete="new-password"
                 required
                 minLength={8}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Mínimo 8 caracteres"
               />
+              <p className="text-xs text-muted-foreground">Al menos 8 caracteres.</p>
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={loading}>

@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "../context/AuthContext";
-import { apiFetch, ApiError } from "../lib/api";
+import { apiFetch } from "../lib/api";
+import { toUserMessage } from "../lib/errors";
 
 type CampaignWithBrand = Campaign & { brand: { companyName: string; industry: string; website: string } };
 type ApplicationWithCreator = CampaignApplication & { creator: Creator & { user: { email: string } } };
@@ -24,24 +25,33 @@ export function CampaignDetail() {
   const [myApplication, setMyApplication] = useState<CampaignApplication | null>(null);
   const [applying, setApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   async function load() {
     if (!id) return;
-    const c = await apiFetch<CampaignWithBrand>(`/campaigns/${id}`);
-    setCampaign(c);
+    setLoadError(null);
+    try {
+      const c = await apiFetch<CampaignWithBrand>(`/campaigns/${id}`);
+      setCampaign(c);
 
-    if (user?.role === "MARCA") {
-      try {
-        const apps = await apiFetch<ApplicationWithCreator[]>(`/campaigns/${id}/applications`);
-        setApplications(apps);
-      } catch {
-        setApplications([]);
+      if (user?.role === "MARCA") {
+        try {
+          const apps = await apiFetch<ApplicationWithCreator[]>(`/campaigns/${id}/applications`);
+          setApplications(apps);
+        } catch {
+          // La campaña puede pertenecer a otra marca: no es un error de pantalla.
+          setApplications([]);
+        }
       }
-    }
 
-    if (user?.role === "CREADOR") {
-      const myApps = await apiFetch<Array<CampaignApplication & { campaignId: string }>>("/campaigns/mine/applications");
-      setMyApplication(myApps.find((a) => a.campaignId === id) || null);
+      if (user?.role === "CREADOR") {
+        const myApps = await apiFetch<Array<CampaignApplication & { campaignId: string }>>(
+          "/campaigns/mine/applications"
+        );
+        setMyApplication(myApps.find((a) => a.campaignId === id) || null);
+      }
+    } catch (err) {
+      setLoadError(toUserMessage(err, "No pudimos cargar esta campaña."));
     }
   }
 
@@ -58,7 +68,7 @@ export function CampaignDetail() {
       const app = await apiFetch<CampaignApplication>(`/campaigns/${id}/apply`, { method: "POST" });
       setMyApplication(app);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo aplicar a la campaña.");
+      setError(toUserMessage(err, "No se pudo aplicar a la campaña."));
     } finally {
       setApplying(false);
     }
@@ -71,6 +81,17 @@ export function CampaignDetail() {
       body: JSON.stringify({ status }),
     });
     load();
+  }
+
+  if (loadError) {
+    return (
+      <div className="container flex flex-col items-center gap-4 py-24 text-center">
+        <p className="text-sm text-destructive">{loadError}</p>
+        <Button variant="outline" size="sm" onClick={load}>
+          Reintentar
+        </Button>
+      </div>
+    );
   }
 
   if (!campaign) {

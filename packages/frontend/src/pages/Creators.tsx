@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { apiFetch } from "../lib/api";
+import { toUserMessage } from "../lib/errors";
 
 type CreatorWithUser = Creator & { user: { email: string; createdAt: string } };
 
@@ -15,6 +16,7 @@ export function Creators() {
   const [nicho, setNicho] = useState("");
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -22,8 +24,10 @@ export function Creators() {
     if (verifiedOnly) params.set("verified", "true");
 
     setLoading(true);
+    setError(null);
     apiFetch<CreatorWithUser[]>(`/creators?${params.toString()}`)
       .then(setCreators)
+      .catch((err) => setError(toUserMessage(err, "No pudimos cargar los creadores.")))
       .finally(() => setLoading(false));
   }, [nicho, verifiedOnly]);
 
@@ -62,6 +66,8 @@ export function Creators() {
           <Loader2 className="h-4 w-4 animate-spin" />
           Cargando creadores...
         </div>
+      ) : error ? (
+        <p className="py-16 text-sm text-destructive">{error}</p>
       ) : creators.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-24 text-center text-muted-foreground">
           <Inbox className="h-8 w-8" strokeWidth={1.5} />

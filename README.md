@@ -63,7 +63,7 @@ hispanohablantes de LATAM. Pagos en USDC, sin fricción bancaria.
    npm run db:migrate
    ```
 
-5. **Siembra datos demo** (admin, marca Hivello, 10 creadores, 3 campañas):
+5. **Siembra datos demo** (admin, marca demo, 10 creadores, 3 campañas):
 
    ```bash
    npm run db:seed
@@ -85,17 +85,25 @@ hispanohablantes de LATAM. Pagos en USDC, sin fricción bancaria.
 | Rol     | Email                          | Password    |
 |---------|---------------------------------|-------------|
 | Admin   | admin@casacreadores.com         | admin123    |
-| Marca   | marca@hivello.com               | marca123    |
+| Marca   | marca@casacreadores.demo        | marca123    |
 | Creador | creador1@casacreadores.demo     | creador123  |
 
 (`creador1` a `creador10@casacreadores.demo`, misma contraseña `creador123`.)
 
-## Verificación de email en desarrollo
+## Verificación de email
 
-No hay proveedor SMTP configurado por defecto: el link de verificación se imprime en la
-consola del backend al registrarte, y la respuesta de `POST /api/auth/register` incluye
-`devVerificationUrl` cuando `NODE_ENV !== production`, para facilitar pruebas sin bandeja
-de entrada real. Los usuarios sembrados por el seed ya vienen verificados.
+El backend **solo exige verificación por email si hay un proveedor configurado**
+(`SMTP_HOST` + `SMTP_USER`). Es una decisión deliberada: sin proveedor, el usuario nunca
+recibiría el enlace y la cuenta quedaría permanentemente bloqueada.
+
+- **Sin SMTP configurado** (estado actual): `POST /api/auth/register` crea la cuenta ya
+  activa y devuelve `accessToken` + `refreshToken`, de modo que el registro termina
+  directamente en el panel. La respuesta incluye `requiresVerification: false`.
+- **Con SMTP configurado**: el registro devuelve `requiresVerification: true` y la cuenta
+  queda pendiente hasta visitar el enlace enviado por correo.
+
+Puedes comprobar en qué modo está el backend desplegado con `GET /api/health`, que
+devuelve `emailDelivery: "configured" | "not-configured"` y los orígenes CORS permitidos.
 
 ## Rutas de la API
 
@@ -130,11 +138,26 @@ PATCH  /api/campaigns/:id/applications/:appId (marca)
 GET    /api/payments/mine            (marca)
 POST   /api/payments                 (marca, simula pago en USDC)
 
+POST   /api/contact                 (público, formulario de contacto)
+
 GET    /api/admin/creators
 PATCH  /api/admin/creators/:id/verify
 GET    /api/admin/payments
 GET    /api/admin/stats
+GET    /api/admin/contact-messages
+PATCH  /api/admin/contact-messages/:id
 ```
+
+## Contacto y redes sociales
+
+El sitio no muestra emails ni perfiles inventados:
+
+- **Contacto**: el enlace lleva a `/contacto`, un formulario que guarda el mensaje en base
+  de datos (`ContactMessage`) y se revisa desde la pestaña *Mensajes* del panel admin.
+  Si defines `VITE_CONTACT_EMAIL`, además se muestra ese email como alternativa.
+- **Redes sociales**: los iconos del footer solo aparecen si defines `VITE_SOCIAL_X`,
+  `VITE_SOCIAL_LINKEDIN` o `VITE_SOCIAL_INSTAGRAM`. Sin configurar, no se renderiza
+  ningún enlace (en vez de un `href="#"` que no lleva a ninguna parte).
 
 ## Modelo de datos (Prisma)
 

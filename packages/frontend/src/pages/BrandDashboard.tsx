@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { apiFetch, ApiError } from "../lib/api";
+import { toUserMessage } from "../lib/errors";
 
 const STATUS_VARIANT: Record<string, "success" | "warning" | "secondary" | "outline"> = {
   DRAFT: "secondary",
@@ -37,7 +38,7 @@ function BrandProfileForm({ onSaved }: { onSaved: (brand: Brand) => void }) {
       });
       onSaved(brand);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo guardar el perfil.");
+      setError(toUserMessage(err, "No se pudo guardar el perfil."));
     } finally {
       setLoading(false);
     }
@@ -103,8 +104,11 @@ export function BrandDashboard() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [payingId, setPayingId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [payError, setPayError] = useState<string | null>(null);
 
   async function loadAll() {
+    setLoadError(null);
     try {
       const b = await apiFetch<Brand>("/brands/me");
       setBrand(b);
@@ -115,9 +119,12 @@ export function BrandDashboard() {
       setCampaigns(c);
       setPayments(p);
     } catch (err) {
+      // 404 significa "todavía no completó el perfil", no es un error real.
       if (err instanceof ApiError && err.status === 404) {
         setBrand(null);
+        return;
       }
+      setLoadError(toUserMessage(err, "No pudimos cargar tu panel."));
     }
   }
 
@@ -127,6 +134,7 @@ export function BrandDashboard() {
 
   async function handlePay(campaign: Campaign) {
     setPayingId(campaign.id);
+    setPayError(null);
     try {
       await apiFetch("/payments", {
         method: "POST",
@@ -135,10 +143,21 @@ export function BrandDashboard() {
       const p = await apiFetch<Payment[]>("/payments/mine");
       setPayments(p);
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "No se pudo procesar el pago.");
+      setPayError(toUserMessage(err, "No se pudo procesar el pago."));
     } finally {
       setPayingId(null);
     }
+  }
+
+  if (loadError) {
+    return (
+      <div className="container flex flex-col items-center gap-4 py-24 text-center">
+        <p className="text-sm text-destructive">{loadError}</p>
+        <Button variant="outline" size="sm" onClick={loadAll}>
+          Reintentar
+        </Button>
+      </div>
+    );
   }
 
   if (brand === undefined) {
@@ -184,6 +203,8 @@ export function BrandDashboard() {
       </div>
 
       <h2 className="mb-6 text-sm font-medium uppercase tracking-wide text-muted-foreground">Tus campañas</h2>
+
+      {payError && <p className="mb-4 text-sm text-destructive">{payError}</p>}
 
       {campaigns.length === 0 ? (
         <div className="flex flex-col items-center gap-3 border-t border-border py-24 text-center text-muted-foreground">

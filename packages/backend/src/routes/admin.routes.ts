@@ -41,6 +41,27 @@ router.patch("/creators/:id/verify", validateBody(verifyCreatorSchema), async (r
   }
 });
 
+router.get("/contact-messages", async (_req, res, next) => {
+  try {
+    const messages = await prisma.contactMessage.findMany({ orderBy: { createdAt: "desc" } });
+    res.json(messages);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch("/contact-messages/:id", validateBody(z.object({ handled: z.boolean() })), async (req, res, next) => {
+  try {
+    const message = await prisma.contactMessage.update({
+      where: { id: req.params.id },
+      data: { handled: req.body.handled },
+    });
+    res.json(message);
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/payments", async (_req, res, next) => {
   try {
     const payments = await prisma.payment.findMany({

@@ -95,15 +95,7 @@ export function Landing() {
             Casa Creadores nos ayudó a encontrar creadores cripto hispanohablantes de verdad, con seguidores reales y
             contenido de calidad. El pago en USDC nos ahorró semanas de fricción bancaria en LATAM.
           </p>
-          <div className="mt-8 flex items-center justify-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground">
-              H
-            </div>
-            <div className="text-left">
-              <p className="text-sm font-medium text-foreground">Equipo de Marketing</p>
-              <p className="text-sm text-muted-foreground">Hivello</p>
-            </div>
-          </div>
+          <p className="mt-8 text-sm text-muted-foreground">Equipo de Marketing</p>
         </div>
       </section>
 

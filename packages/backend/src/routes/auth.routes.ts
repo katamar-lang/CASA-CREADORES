@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { Router } from "express";
-import { sendVerificationEmail } from "../lib/email";
+import { isEmailDeliveryConfigured, sendVerificationEmail } from "../lib/email";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../lib/jwt";
 import { prisma } from "../lib/prisma";
 import { AuthRequest, requireAuth } from "../middleware/auth";
@@ -13,6 +13,12 @@ const router = Router();
 
 const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24 horas
 
+// Primer origen configurado en FRONTEND_URL, sin barra final.
+function getFrontendUrl(): string {
+  const raw = (process.env.FRONTEND_URL || "http://localhost:5173").split(",")[0].trim();
+  return raw.replace(/\/+$/, "");
+}
+
 router.post("/register", authLimiter, validateBody(registerSchema), async (req, res, next) => {
   try {
     const { email, password, role } = req.body;
@@ -23,24 +29,46 @@ router.post("/register", authLimiter, validateBody(registerSchema), async (req, 
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const verificationToken = crypto.randomBytes(32).toString("hex");
+
+    // Solo exigimos verificación por email si realmente podemos enviar el correo.
+    // Sin proveedor configurado el usuario nunca recibiría el enlace y la cuenta
+    // quedaría inutilizable, así que la activamos al momento.
+    const requiresVerification = isEmailDeliveryConfigured();
+    const verificationToken = requiresVerification ? crypto.randomBytes(32).toString("hex") : null;
 
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         role,
+        emailVerified: !requiresVerification,
         verificationToken,
-        verificationExpiresAt: new Date(Date.now() + VERIFICATION_TTL_MS),
+        verificationExpiresAt: requiresVerification ? new Date(Date.now() + VERIFICATION_TTL_MS) : null,
       },
     });
 
-    const verificationUrl = `${process.env.FRONTEND_URL || "http://localhost:5173"}/verify-email?token=${verificationToken}`;
-    await sendVerificationEmail(user.email, verificationUrl);
+    if (requiresVerification && verificationToken) {
+      const verificationUrl = `${getFrontendUrl()}/verify-email?token=${verificationToken}`;
+      await sendVerificationEmail(user.email, verificationUrl);
+
+      return res.status(201).json({
+        requiresVerification: true,
+        message: "Cuenta creada. Revisa tu email para verificar tu cuenta.",
+      });
+    }
+
+    // Cuenta lista para usarse: devolvemos sesión para que el registro termine
+    // directamente en el panel correspondiente.
+    const accessToken = signAccessToken({ userId: user.id, role: user.role });
+    const refreshToken = signRefreshToken({ userId: user.id, role: user.role });
+    await prisma.user.update({ where: { id: user.id }, data: { refreshToken } });
 
     res.status(201).json({
-      message: "Cuenta creada. Revisa tu email para verificar tu cuenta.",
-      ...(process.env.NODE_ENV !== "production" ? { devVerificationUrl: verificationUrl } : {}),
+      requiresVerification: false,
+      message: "Cuenta creada correctamente.",
+      accessToken,
+      refreshToken,
+      user: { id: user.id, email: user.email, role: user.role, emailVerified: user.emailVerified },
     });
   } catch (err) {
     next(err);
@@ -137,7 +165,7 @@ router.get("/me", requireAuth, async (req: AuthRequest, res, next) => {
     });
     if (!user) return res.status(404).json({ error: "Usuario no encontrado." });
 
-    const { password, verificationToken, refreshToken, ...safeUser } = user;
+    const { password, verificationToken, verificationExpiresAt, refreshToken, ...safeUser } = user;
     res.json(safeUser);
   } catch (err) {
     next(err);

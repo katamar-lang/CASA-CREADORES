@@ -2,7 +2,8 @@ import { CircleAlert, CircleCheck, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { apiFetch, ApiError } from "../lib/api";
+import { apiFetch } from "../lib/api";
+import { toUserMessage } from "../lib/errors";
 
 export function VerifyEmail() {
   const [searchParams] = useSearchParams();
@@ -28,7 +29,7 @@ export function VerifyEmail() {
       })
       .catch((err) => {
         setStatus("error");
-        setMessage(err instanceof ApiError ? err.message : "No se pudo verificar el email.");
+        setMessage(toUserMessage(err, "No se pudo verificar el email."));
       });
   }, [token]);
 
