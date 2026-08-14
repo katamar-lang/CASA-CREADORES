@@ -155,9 +155,12 @@ El sitio no muestra emails ni perfiles inventados:
 - **Contacto**: el enlace lleva a `/contacto`, un formulario que guarda el mensaje en base
   de datos (`ContactMessage`) y se revisa desde la pestaña *Mensajes* del panel admin.
   Si defines `VITE_CONTACT_EMAIL`, además se muestra ese email como alternativa.
-- **Redes sociales**: los iconos del footer solo aparecen si defines `VITE_SOCIAL_X`,
-  `VITE_SOCIAL_LINKEDIN` o `VITE_SOCIAL_INSTAGRAM`. Sin configurar, no se renderiza
-  ningún enlace (en vez de un `href="#"` que no lleva a ninguna parte).
+- **Redes sociales**: los perfiles reales están fijados en
+  `packages/frontend/src/lib/site.ts`, así que el footer los muestra sin depender de
+  ninguna variable. Hoy solo existe X (`https://x.com/casadecrear`); LinkedIn e Instagram
+  están vacíos y por eso no se renderizan, en vez de mostrar un `href="#"` que no lleva a
+  ninguna parte. `VITE_SOCIAL_X`, `VITE_SOCIAL_LINKEDIN` y `VITE_SOCIAL_INSTAGRAM`
+  siguen sirviendo para sobrescribirlos sin tocar código.
 
 ## Modelo de datos (Prisma)
 
@@ -183,9 +186,46 @@ tocar build/start commands a mano en los dashboards:
   `/api/health`.
 - `packages/frontend/vercel.json`: output directory y rewrite para que las rutas de
   React Router (`/login`, `/marca`, `/creador`, etc.) no den 404 al refrescar o entrar
-  directo por URL.
+  directo por URL. El rewrite excluye `/api/*` a propósito (ver más abajo).
+- `packages/frontend/api/[...path].ts`: función serverless que reenvía `/api/*` al
+  backend de Railway.
 - `packages/frontend/package.json` tiene un script `vercel-build` que Vercel detecta y
   ejecuta automáticamente (compila `shared` antes que `frontend`).
+
+### Cómo habla el frontend con el backend
+
+El navegador **no** llama a Railway directamente: llama a `/api/...` en el mismo dominio
+de Vercel, y la función serverless reenvía la petición al backend.
+
+```
+navegador ──HTTPS──> casa-creadores.vercel.app/api/auth/login
+                          │  (función api/[...path].ts, mismo origen)
+                          └──> casa-creadores-production.up.railway.app/api/auth/login
+```
+
+Esto es deliberado, y viene de un incidente real: el frontend se construyó sin
+`VITE_API_URL`, así que el bundle de producción quedó apuntando a
+`http://localhost:4000/api`. En una página HTTPS eso falla siempre (mixed content, y
+además no hay nada escuchando en el equipo del visitante), de modo que **registro, login
+y contacto mostraban "No pudimos conectar con el servidor"** mientras la landing, que no
+llama a la API, funcionaba con normalidad.
+
+Con el proxy:
+
+- **No hay CORS que romper.** El navegador solo habla con el dominio de Vercel.
+- **No hay URL congelada en el bundle.** `BACKEND_URL` se lee en cada petición, así que
+  cambiar de backend no exige reconstruir el frontend.
+- **No hay variables obligatorias.** La URL de Railway está como valor por defecto en el
+  código; `BACKEND_URL` solo hace falta si cambia.
+- **Los fallos se explican solos.** Sin backend configurado o accesible, la API responde
+  503/502 con el motivo concreto en vez de un error de red genérico.
+
+Como red de seguridad, si `/api` devolviera HTML en vez de JSON (señal de que la función
+no está desplegada), el frontend reintenta automáticamente contra la URL de Railway; el
+backend acepta por CORS cualquier origen `*.vercel.app`.
+
+Puedes comprobar todo esto en producción visitando **`/diagnostico`**, que muestra qué
+URL de API se está usando, de dónde salió y si el backend responde.
 
 ### Backend → Railway
 
@@ -193,9 +233,11 @@ tocar build/start commands a mano en los dashboards:
    repo, sin cambiar nada — `railway.json` ya define el resto).
 2. Agrega un plugin de **Postgres** al proyecto (te da `DATABASE_URL` automáticamente,
    referenciable como variable en el servicio del backend).
-3. Variables de entorno a configurar en el servicio del backend: `DATABASE_URL`
-   (referencia al plugin de Postgres), `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`,
-   `FRONTEND_URL` (la URL de Vercel, se actualiza en el paso 5 de Vercel), `NODE_ENV=production`.
+3. Variables de entorno del servicio: `DATABASE_URL` (referencia al plugin de Postgres),
+   `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `NODE_ENV=production`. Las tres primeras son
+   obligatorias: sin ellas el proceso no arranca y el log dice exactamente cuál falta.
+   `FRONTEND_URL` es opcional (CORS ya acepta `*.vercel.app` y localhost); defínela si usas
+   un dominio propio o si activas la verificación por email.
 4. Deploy. Las migraciones corren solas en cada arranque (parte del `startCommand`).
 5. Siembra los datos demo una sola vez desde la Railway CLI:
    `railway run npm run db:seed --workspace=packages/backend`.
@@ -205,11 +247,8 @@ tocar build/start commands a mano en los dashboards:
 1. Importa el repo en Vercel.
 2. **Root directory**: `packages/frontend` (Vercel detecta el monorepo por el lockfile
    en la raíz y usa `vercel-build` automáticamente).
-3. Variable de entorno: `VITE_API_URL` apuntando a la URL pública del backend en Railway
-   (ej. `https://tu-backend.up.railway.app/api`).
-4. Deploy.
-5. Una vez desplegado, actualiza `FRONTEND_URL` en Railway con la URL final de Vercel para
-   que CORS y los links de verificación de email apunten correctamente.
+3. Deploy. **No hace falta configurar ninguna variable de entorno**: la URL del backend
+   está en el código. Define `BACKEND_URL` solo si el backend cambia de dirección.
 
 ## Scripts útiles
 

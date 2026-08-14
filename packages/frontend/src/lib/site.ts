@@ -1,15 +1,19 @@
 // Configuración centralizada de enlaces externos del sitio.
 //
-// Casa Creadores todavía no tiene perfiles sociales publicados. En vez de
-// mostrar enlaces falsos (href="#" o URLs inventadas), cada enlace solo se
-// renderiza si su variable de entorno está definida en el build.
+// Los perfiles que existen de verdad van aquí como valor por defecto, para que
+// el footer los muestre sin depender de ninguna variable en Vercel. Los que
+// todavía no existen se quedan vacíos y simplemente no se renderizan: es
+// preferible a un icono que enlaza a href="#" o a un perfil inventado.
 //
-// Para activarlos, define en Vercel (Settings → Environment Variables):
-//   VITE_SOCIAL_X          ej. https://x.com/casacreadores
-//   VITE_SOCIAL_LINKEDIN   ej. https://www.linkedin.com/company/casacreadores
-//   VITE_SOCIAL_INSTAGRAM  ej. https://www.instagram.com/casacreadores
-//
-// Y vuelve a desplegar: los enlaces aparecerán automáticamente.
+// Cada uno se puede sobrescribir sin tocar código con VITE_SOCIAL_X,
+// VITE_SOCIAL_LINKEDIN o VITE_SOCIAL_INSTAGRAM.
+
+/** Perfiles publicados de Casa Creadores. Vacío = todavía no existe. */
+const DEFAULT_SOCIAL_URLS = {
+  x: "https://x.com/casadecrear",
+  linkedin: "",
+  instagram: "",
+} as const;
 
 function cleanUrl(value: string | undefined): string | null {
   const trimmed = (value || "").trim();
@@ -27,9 +31,13 @@ export type SocialLink = {
 
 export function getSocialLinks(): SocialLink[] {
   const candidates: Array<{ id: SocialLink["id"]; label: string; raw: string | undefined }> = [
-    { id: "x", label: "X (Twitter)", raw: import.meta.env.VITE_SOCIAL_X },
-    { id: "linkedin", label: "LinkedIn", raw: import.meta.env.VITE_SOCIAL_LINKEDIN },
-    { id: "instagram", label: "Instagram", raw: import.meta.env.VITE_SOCIAL_INSTAGRAM },
+    { id: "x", label: "X (Twitter)", raw: import.meta.env.VITE_SOCIAL_X || DEFAULT_SOCIAL_URLS.x },
+    { id: "linkedin", label: "LinkedIn", raw: import.meta.env.VITE_SOCIAL_LINKEDIN || DEFAULT_SOCIAL_URLS.linkedin },
+    {
+      id: "instagram",
+      label: "Instagram",
+      raw: import.meta.env.VITE_SOCIAL_INSTAGRAM || DEFAULT_SOCIAL_URLS.instagram,
+    },
   ];
 
   return candidates

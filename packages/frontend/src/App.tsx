@@ -10,6 +10,7 @@ import { CampaignDetail } from "./pages/CampaignDetail";
 import { Contact } from "./pages/Contact";
 import { Creators } from "./pages/Creators";
 import { CreatorDashboard } from "./pages/CreatorDashboard";
+import { Diagnostics } from "./pages/Diagnostics";
 import { Landing } from "./pages/Landing";
 import { Login } from "./pages/Login";
 import { NotFound } from "./pages/NotFound";
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/registro" element={<Register />} />
           <Route path="/contacto" element={<Contact />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/diagnostico" element={<Diagnostics />} />
 
           <Route
             path="/marca"
